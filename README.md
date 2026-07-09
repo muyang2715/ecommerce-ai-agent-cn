@@ -249,6 +249,16 @@ Test these in the Streamlit UI or via API:
 | `I need to return ORD-1008` | Triage → check → **denied** (outside 14-day window) |
 | `Track UPS-99887766` | Triage → `track_shipment` → Response (out for delivery) |
 
+### Demo
+
+**Order lookup with agent reasoning details expanded:**
+
+![Demo 1](images/demo-1.png)
+
+**Package tracking with full event history:**
+
+![Demo 2](images/demo-2.png)
+
 ---
 
 ## 🗄️ Database Schema
