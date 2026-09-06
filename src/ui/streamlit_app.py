@@ -21,12 +21,17 @@ st.markdown(
     :root {
         --canvas: #f7f4ef;
         --paper: #fffdfa;
+        --paper-warm: #fbf6ef;
         --ink: #2d2926;
+        --ink-soft: #554d46;
         --muted: #746d65;
         --line: #e6dfd6;
+        --line-strong: #d6cabe;
         --accent: #c96442;
+        --accent-ink: #914128;
         --accent-soft: #f5e8e0;
         --sage: #61766a;
+        --focus: rgba(201, 100, 66, .28);
         --font-cn: "Crate FangSong", "STFangsong", "FangSong",
                    "FangSong_GB2312",
                    "华文仿宋", "Noto Serif CJK SC", serif;
@@ -48,49 +53,57 @@ st.markdown(
     }
     .stApp {
         color: var(--ink);
-        background:
-            radial-gradient(circle at 12% 0%, rgba(201, 100, 66, .08), transparent 25rem),
-            var(--canvas);
+        background: var(--canvas);
     }
-    .main .block-container {
-        max-width: 860px;
-        padding: 2.2rem 1.5rem 7rem;
+    [data-testid="stMainBlockContainer"] {
+        max-width: 900px;
+        padding: 2rem 1.5rem 7.5rem;
     }
     #MainMenu, footer, header [data-testid="stDecoration"],
     [data-testid="stToolbar"], .stDeployButton { display: none !important; }
 
-    .hero {
+    .service-masthead {
+        position: relative;
+        overflow: hidden;
+        padding: 1.05rem 1.2rem 0;
+        margin-bottom: 1.35rem;
+        border: 1px solid var(--line-strong);
+        border-right: 6px solid var(--sage);
+        border-radius: 7px 22px 7px 22px;
+        background: var(--paper);
+        box-shadow: 0 16px 42px rgba(72, 55, 41, .075);
+    }
+    .masthead-meta {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1.5rem;
-        padding: 1.2rem 1.35rem;
-        margin-bottom: 1rem;
-        border: 1px solid var(--line);
-        border-radius: 22px;
-        background: rgba(255, 253, 250, .88);
-        box-shadow: 0 12px 35px rgba(72, 55, 41, .06);
-        backdrop-filter: blur(12px);
+        padding-bottom: .8rem;
+        color: var(--muted);
+        font-size: .68rem;
+        letter-spacing: .16em;
+        text-transform: uppercase;
     }
-    .brand { display: flex; align-items: center; gap: .8rem; }
+    .brand { display: flex; align-items: center; gap: .9rem; padding-bottom: 1rem; }
     .brand-mark {
         display: grid;
-        width: 42px;
-        height: 42px;
+        width: 46px;
+        height: 46px;
         place-items: center;
-        border-radius: 14px;
+        border-radius: 50% 50% 48% 12px;
         color: #fffaf5;
         background: var(--accent);
         box-shadow: 0 7px 18px rgba(201, 100, 66, .22);
-        font-size: 1.2rem;
+        font-size: 1.15rem;
+        transform: rotate(-3deg);
     }
+    .brand-mark span { transform: rotate(3deg); }
     .brand-name {
         color: var(--ink);
-        font-size: 1.25rem;
+        font-size: 1.38rem;
         font-weight: 700;
-        letter-spacing: .04em;
+        letter-spacing: .06em;
     }
-    .brand-sub { margin-top: .13rem; color: var(--muted); font-size: .83rem; }
+    .brand-sub { margin-top: .18rem; color: var(--muted); font-size: .82rem; letter-spacing: .03em; }
     .online {
         display: flex;
         align-items: center;
@@ -107,40 +120,89 @@ st.markdown(
         content: "";
         box-shadow: 0 0 0 4px rgba(111, 146, 125, .12);
     }
-    .intro { padding: .25rem .2rem .75rem; }
-    .intro-title { margin: 0; color: var(--ink); font-size: 1.52rem; font-weight: 700; }
-    .intro-copy { margin-top: .35rem; color: var(--muted); font-size: .94rem; line-height: 1.7; }
+    .service-route {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        margin: 0 -1.2rem;
+        border-top: 1px dashed var(--line-strong);
+        background: var(--paper-warm);
+    }
+    .route-stop {
+        position: relative;
+        padding: .7rem .85rem .72rem;
+        color: var(--ink-soft);
+        font-size: .73rem;
+        letter-spacing: .04em;
+    }
+    .route-stop + .route-stop { border-left: 1px solid var(--line); }
+    .route-stop b { margin-right: .38rem; color: var(--accent-ink); font-size: .66rem; font-weight: 400; }
+    .intro { display: grid; grid-template-columns: 9rem 1fr; gap: 1.25rem; padding: .1rem .2rem .9rem; }
+    .intro-kicker {
+        padding-top: .38rem;
+        color: var(--accent-ink);
+        font-size: .67rem;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+    }
+    .intro-title { margin: 0; color: var(--ink); font-size: 1.62rem; font-weight: 700; letter-spacing: .04em; }
+    .intro-copy { max-width: 38rem; margin-top: .38rem; color: var(--muted); font-size: .9rem; line-height: 1.78; }
+    .quick-label {
+        margin: .1rem 0 .48rem;
+        color: var(--muted);
+        font-size: .69rem;
+        letter-spacing: .14em;
+    }
 
     [data-testid="stButton"] > button {
-        min-height: 2.7rem;
+        min-height: 3rem;
+        justify-content: flex-start;
+        padding: .6rem .82rem;
         border: 1px solid var(--line);
-        border-radius: 13px;
+        border-radius: 5px 13px 5px 13px;
         color: #534b45;
-        background: rgba(255, 253, 250, .9);
-        font-size: .83rem;
-        transition: transform .15s ease, border-color .15s ease, background .15s ease;
+        background: var(--paper);
+        font-size: .79rem;
+        letter-spacing: .025em;
+        transition: transform .16s ease, border-color .16s ease, background .16s ease;
         box-shadow: none;
+    }
+    [data-testid="stButton"] > button p {
+        width: 100%;
+        overflow: visible;
+        text-align: left;
+        text-overflow: clip;
+        white-space: normal;
     }
     [data-testid="stButton"] > button:hover {
         border-color: #d5a28e;
         color: #9b4d34;
         background: var(--accent-soft);
-        transform: translateY(-1px);
+        transform: translateY(-2px);
     }
-    hr { margin: 1rem 0 1.15rem !important; border-color: var(--line) !important; }
+    [data-testid="stButton"] > button:focus-visible,
+    [data-testid="stChatInput"] textarea:focus-visible {
+        outline: 3px solid var(--focus) !important;
+        outline-offset: 2px;
+    }
+    hr { margin: 1.15rem 0 1.2rem !important; border-color: var(--line) !important; }
 
     [data-testid="stChatMessage"] {
-        margin: .72rem 0;
-        padding: 1rem 1.1rem;
+        position: relative;
+        margin: .82rem 0;
+        padding: 1.05rem 1.15rem;
         border: 1px solid var(--line);
-        border-radius: 18px;
+        border-left: 3px solid #d49a83;
+        border-radius: 4px 17px 17px 17px;
         background: var(--paper);
-        box-shadow: 0 5px 18px rgba(72, 55, 41, .035);
+        box-shadow: 0 8px 25px rgba(72, 55, 41, .045);
     }
     [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
-        margin-left: 8%;
-        border-color: #ead4c8;
-        background: #faf0e9;
+        margin-left: 16%;
+        border: 1px solid #ead4c8;
+        border-right: 3px solid var(--accent);
+        border-radius: 17px 4px 17px 17px;
+        background: #f8ece4;
+        box-shadow: none;
     }
     [data-testid="stChatMessageAvatar"] {
         width: 2rem;
@@ -148,23 +210,27 @@ st.markdown(
         color: var(--accent);
         background: transparent;
     }
-    [data-testid="stChatMessageContent"] { color: var(--ink); line-height: 1.72; }
+    [data-testid="stChatMessageContent"] { color: var(--ink); font-size: .96rem; line-height: 1.76; }
+    [data-testid="stChatMessageContent"] p:first-child { margin-top: 0; }
+    [data-testid="stChatMessageContent"] p:last-child { margin-bottom: 0; }
 
     [data-testid="stExpander"] {
-        margin-bottom: .65rem;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: #fbf8f3;
+        margin-bottom: .72rem;
+        border: 0;
+        border-top: 1px dashed var(--line-strong);
+        border-bottom: 1px dashed var(--line-strong);
+        border-radius: 0;
+        background: transparent;
     }
-    [data-testid="stExpander"] summary { color: var(--muted); font-size: .83rem; }
+    [data-testid="stExpander"] summary { min-height: 2.35rem; color: var(--muted); font-size: .76rem; }
     .trace-line { margin: .32rem 0; color: #615950; font-size: .82rem; line-height: 1.6; }
     .trace-tool {
         margin: .45rem 0 .65rem;
         padding: .65rem .75rem;
-        border-left: 3px solid #d9a38e;
-        border-radius: 0 8px 8px 0;
+        border-left: 2px solid #d9a38e;
+        border-radius: 0 5px 5px 0;
         color: #625a53;
-        background: #fffdfa;
+        background: var(--paper-warm);
         font-size: .78rem;
         white-space: pre-wrap;
     }
@@ -183,9 +249,9 @@ st.markdown(
     }
     [data-testid="stChatInput"] {
         border: 1px solid #dcd2c8;
-        border-radius: 17px;
+        border-radius: 5px 17px 5px 17px;
         background: var(--paper) !important;
-        box-shadow: 0 12px 35px rgba(72, 55, 41, .1);
+        box-shadow: 0 14px 38px rgba(72, 55, 41, .12);
     }
     [data-testid="stChatInput"] > div,
     [data-testid="stChatInput"] textarea {
@@ -212,13 +278,52 @@ st.markdown(
     }
     [data-testid="stSpinner"] { color: var(--muted); }
 
+    .service-masthead,
+    .intro,
+    [data-testid="stHorizontalBlock"],
+    [data-testid="stChatMessage"] {
+        animation: settle-in .42s ease both;
+    }
+    .intro { animation-delay: .05s; }
+    [data-testid="stHorizontalBlock"] { animation-delay: .1s; }
+    @keyframes settle-in {
+        from { opacity: 0; transform: translateY(7px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     @media (max-width: 640px) {
-        .main .block-container { padding: 1rem .7rem 6rem; }
-        .hero { padding: 1rem; border-radius: 17px; }
-        .online { display: none; }
+        [data-testid="stMainBlockContainer"] { padding: 4rem .8rem 6.8rem; }
+        .service-masthead { padding: .85rem .9rem 0; border-radius: 6px 17px 6px 17px; }
+        .masthead-meta { padding-bottom: .65rem; }
+        .brand { padding-bottom: .8rem; }
+        .brand-mark { width: 40px; height: 40px; }
+        .brand-name { font-size: 1.12rem; }
+        .brand-sub { font-size: .7rem; }
+        .service-route { grid-template-columns: repeat(2, 1fr); margin: 0 -.9rem; }
+        .route-stop:nth-child(3) { border-left: 0; border-top: 1px solid var(--line); }
+        .route-stop:nth-child(4) { border-top: 1px solid var(--line); }
+        .intro { grid-template-columns: 1fr; gap: .25rem; padding: 0 .08rem .72rem; }
+        .intro-kicker { padding-top: 0; }
         .intro-title { font-size: 1.3rem; }
-        [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
-        [data-testid="column"] { min-width: 46% !important; }
+        .intro-copy { font-size: .82rem; }
+        [data-testid="stHorizontalBlock"] { flex-wrap: wrap !important; gap: .55rem !important; }
+        [data-testid="stColumn"] {
+            flex: 1 1 calc(50% - .3rem) !important;
+            width: calc(50% - .3rem) !important;
+            min-width: calc(50% - .3rem) !important;
+        }
+        [data-testid="stButton"] > button { min-height: 3.4rem; padding: .5rem .62rem; line-height: 1.35; }
+        [data-testid="stChatMessage"] { padding: .9rem .85rem; }
+        [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) { margin-left: 5%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            scroll-behavior: auto !important;
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .01ms !important;
+        }
     }
     </style>
     """,
@@ -227,19 +332,31 @@ st.markdown(
 
 st.markdown(
     """
-    <div class="hero">
+    <section class="service-masthead" aria-label="Crate 服务台">
+      <div class="masthead-meta">
+        <span>CRATE / CUSTOMER DESK</span>
+        <span class="online">服务在线</span>
+      </div>
       <div class="brand">
-        <div class="brand-mark">C</div>
+        <div class="brand-mark" aria-hidden="true"><span>C</span></div>
         <div>
           <div class="brand-name">Crate 品牌智能助手</div>
-          <div class="brand-sub">智能导购 · 订单 · 物流 · 售后，一站式协助</div>
+          <div class="brand-sub">从选择商品到签收售后，沿一条服务路线解决</div>
         </div>
       </div>
-      <div class="online">服务在线</div>
-    </div>
+      <div class="service-route" role="list" aria-label="服务范围">
+        <span class="route-stop" role="listitem"><b>01</b>智能导购</span>
+        <span class="route-stop" role="listitem"><b>02</b>订单查询</span>
+        <span class="route-stop" role="listitem"><b>03</b>物流追踪</span>
+        <span class="route-stop" role="listitem"><b>04</b>退货售后</span>
+      </div>
+    </section>
     <div class="intro">
-      <p class="intro-title">今天想查询什么？</p>
-      <div class="intro-copy">从选购建议到订单售后，我会根据你的问题自主判断是否调用业务工具，也可以自然交流一般问题。</div>
+      <div class="intro-kicker">START / 从这里开始</div>
+      <div>
+        <p class="intro-title">今天想解决什么？</p>
+        <div class="intro-copy">直接描述需求。我会先理解问题，再决定是自然回答，还是查询商品、订单、物流与售后数据。</div>
+      </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -295,7 +412,7 @@ def render_details(steps: dict | None) -> None:
     if steps.get("customer_email"):
         facts.append(f"邮箱：{steps['customer_email']}")
 
-    with st.expander("查看处理详情与 Tool Results", expanded=False):
+    with st.expander("执行记录 · Tool Results", expanded=False):
         st.markdown(
             f'<div class="trace-line">● {html.escape(INTENT_LABELS.get(intent, "已分析请求"))}</div>',
             unsafe_allow_html=True,
@@ -345,12 +462,13 @@ def call_api(query: str) -> tuple[str, dict | None]:
 
 
 QUICK_ACTIONS = [
-    ("查询 ORD-1002", "查询订单 ORD-1002 的状态"),
-    ("追踪 FDX-78901234", "查询物流 FDX-78901234"),
-    ("帮我选商品", "我想买一款 150 美元以内的键盘，请帮我推荐"),
-    ("了解退货政策", "请介绍一下退货政策"),
+    ("查订单 · ORD-1002", "查询订单 ORD-1002 的状态"),
+    ("追物流 · FDX-78901234", "查询物流 FDX-78901234"),
+    ("选商品 · 预算 $150", "我想买一款 150 美元以内的键盘，请帮我推荐"),
+    ("看政策 · 14 天退货", "请介绍一下退货政策"),
 ]
 
+st.markdown('<div class="quick-label">QUICK ROUTES / 常用任务</div>', unsafe_allow_html=True)
 columns = st.columns(4)
 for index, (label, query) in enumerate(QUICK_ACTIONS):
     with columns[index]:

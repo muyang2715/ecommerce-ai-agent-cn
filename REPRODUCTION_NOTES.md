@@ -352,6 +352,10 @@ Triage → 条件 Router → Tool Execution → after_tools Router → Response
 6. 详情区显示 intent、识别实体、Tool 名和真实 Tool Results，不展示或伪造隐藏思维链。
 7. 已用自动化浏览器检查桌面布局、快捷操作、中文回复和详情展开：页面非空、无错误遮罩、无捕获到的控制台错误。
 8. 针对 Streamlit 1.63 动态样式补充项目级浅色主题和强制仿宋选择器；底部输入栏明确设置背景、文字填充色、光标与占位符颜色，已通过实际输入中文截图验证。
+9. 第二轮美化按 [PaulRBerg/agent-skills 的 `frontend-design`](https://github.com/PaulRBerg/agent-skills/tree/main/skills/frontend-design) skill 完整执行，保留 Streamlit 技术栈，没有引入新 UI 依赖。
+10. 视觉方向定为“电商服务台票据”：用智能导购→订单查询→物流追踪→退货售后的四段服务路线作为识别性结构，而不是通用聊天卡片堆叠。
+11. 快捷任务在手机端保持 2×2 排布，长物流单号完整换行；页面支持键盘焦点环和 `prefers-reduced-motion`，375×812 与 1280×900 下均无横向溢出。
+12. WCAG 2 A/AA 自动检查为 0 个 violation；仅保留 Streamlit 生成 DOM 的 ARIA 属性和重叠背景两项无法自动判定项。
 
 # 本地兼容性修改
 
