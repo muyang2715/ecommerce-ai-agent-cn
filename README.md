@@ -228,6 +228,8 @@ pytest tests/ -v
 
 ```text
 ecommerce-ai-agent-cn/
+├── .streamlit/
+│   └── config.toml              # 固定浅色主题，避免输入栏跟随系统变暗
 ├── run.py
 ├── requirements.txt
 ├── README.md

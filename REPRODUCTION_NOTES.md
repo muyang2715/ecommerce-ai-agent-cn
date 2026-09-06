@@ -344,6 +344,7 @@ Triage → 条件 Router → Tool Execution → after_tools Router → Response
 5. 字体栈优先使用 macOS 的 `STFangsong`/`华文仿宋`，并提供 Windows `FangSong`/`FangSong_GB2312` 与 CJK Serif 回退。
 6. 详情区显示 intent、识别实体、Tool 名和真实 Tool Results，不展示或伪造隐藏思维链。
 7. 已用自动化浏览器检查桌面布局、快捷操作、中文回复和详情展开：页面非空、无错误遮罩、无捕获到的控制台错误。
+8. 针对 Streamlit 1.63 动态样式补充项目级浅色主题和强制仿宋选择器；底部输入栏明确设置背景、文字填充色、光标与占位符颜色，已通过实际输入中文截图验证。
 
 # 本地兼容性修改
 

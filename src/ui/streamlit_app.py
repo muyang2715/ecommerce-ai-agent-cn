@@ -26,12 +26,24 @@ st.markdown(
         --accent: #c96442;
         --accent-soft: #f5e8e0;
         --sage: #61766a;
-        --font-cn: "FangSong", "STFangsong", "FangSong_GB2312",
+        --font-cn: "Crate FangSong", "STFangsong", "FangSong",
+                   "FangSong_GB2312",
                    "华文仿宋", "Noto Serif CJK SC", serif;
     }
 
-    html, body, [class*="css"], .stApp, button, input, textarea {
+    @font-face {
+        font-family: "Crate FangSong";
+        src: local("STFangsong"), local("FangSong"),
+             local("FangSong_GB2312"), local("华文仿宋");
+        font-display: swap;
+    }
+
+    html, body, .stApp,
+    .stApp *:not([data-testid="stIconMaterial"]) {
         font-family: var(--font-cn) !important;
+    }
+    [data-testid="stIconMaterial"] {
+        font-family: "Material Symbols Rounded" !important;
     }
     .stApp {
         color: var(--ink);
@@ -156,14 +168,47 @@ st.markdown(
         white-space: pre-wrap;
     }
 
+    [data-testid="stBottom"],
+    [data-testid="stBottom"] > div {
+        background: linear-gradient(
+            to bottom,
+            rgba(247, 244, 239, 0),
+            var(--canvas) 34%,
+            var(--canvas) 100%
+        ) !important;
+    }
+    [data-testid="stBottomBlockContainer"] {
+        background: transparent !important;
+    }
     [data-testid="stChatInput"] {
         border: 1px solid #dcd2c8;
         border-radius: 17px;
-        background: var(--paper);
+        background: var(--paper) !important;
         box-shadow: 0 12px 35px rgba(72, 55, 41, .1);
     }
-    [data-testid="stChatInput"] textarea { color: var(--ink); caret-color: var(--accent); }
-    [data-testid="stChatInput"] button { color: var(--accent); }
+    [data-testid="stChatInput"] > div,
+    [data-testid="stChatInput"] textarea {
+        background: var(--paper) !important;
+    }
+    [data-testid="stChatInput"] textarea {
+        color: var(--ink) !important;
+        -webkit-text-fill-color: var(--ink) !important;
+        caret-color: var(--accent) !important;
+        opacity: 1 !important;
+    }
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: #81786f !important;
+        -webkit-text-fill-color: #81786f !important;
+        opacity: 1 !important;
+    }
+    [data-testid="stChatInput"] button {
+        color: var(--accent) !important;
+        background: #f4e8e1 !important;
+    }
+    [data-testid="stChatInput"] button svg {
+        color: var(--accent) !important;
+        fill: var(--accent) !important;
+    }
     [data-testid="stSpinner"] { color: var(--muted); }
 
     @media (max-width: 640px) {
