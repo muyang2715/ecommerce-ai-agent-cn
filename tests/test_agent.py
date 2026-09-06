@@ -83,7 +83,7 @@ class TestOrderService:
         svc = OrderService()
         can, msg = svc.can_return("ORD-1004")
         assert can is False
-        assert "cancel" in msg.lower()
+        assert "取消" in msg
 
     def test_cannot_return_unshipped_order(self):
         from src.services.order_service import OrderService
@@ -123,7 +123,7 @@ class TestShippingService:
 
         svc = ShippingService()
         status = svc.get_readable_status("FDX-78901234")
-        assert "delivered" in status.lower()
+        assert "已送达" in status
 
 
 class TestReturnsService:
@@ -141,7 +141,7 @@ class TestReturnsService:
 
         svc = ReturnsService()
         policy = svc.get_policy()
-        assert "14 days" in policy
+        assert "14 天" in policy
 
 
 # ---------------------------------------------------------------------------
@@ -155,27 +155,27 @@ class TestAgentTools:
 
         result = lookup_order.invoke({"order_id": "ORD-1001"})
         assert "James Wilson" in result
-        assert "delivered" in result
+        assert "已送达" in result
         assert "105.97" in result
 
     def test_lookup_missing_order(self):
         from src.agent.tools import lookup_order
 
         result = lookup_order.invoke({"order_id": "ORD-XXXX"})
-        assert "not found" in result.lower()
+        assert "未找到" in result
 
     def test_track_shipment(self):
         from src.agent.tools import track_shipment
 
         result = track_shipment.invoke({"tracking_number": "UPS-45678901"})
         assert "UPS" in result
-        assert "IN_TRANSIT" in result
+        assert "运输中" in result
 
     def test_get_return_policy(self):
         from src.agent.tools import get_return_policy
 
         result = get_return_policy.invoke({})
-        assert "14 days" in result
+        assert "14 天" in result
 
     def test_check_return_eligibility(self):
         from src.agent.tools import check_return_eligibility

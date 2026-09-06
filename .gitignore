@@ -14,6 +14,8 @@ build/
 
 # Database
 *.db
+*.db-wal
+*.db-shm
 
 # IDE
 .vscode/

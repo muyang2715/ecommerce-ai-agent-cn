@@ -28,7 +28,7 @@ def init_langfuse():
     if _client is not None:
         return
     if not _is_configured():
-        logger.info("Langfuse not configured — tracing disabled.")
+        logger.info("Langfuse 未配置，链路追踪已关闭。")
         return
 
     # CRITICAL: Set env vars BEFORE any langfuse imports
@@ -41,7 +41,7 @@ def init_langfuse():
 
     _client = Langfuse()
     _handler = CallbackHandler()
-    logger.info("Langfuse tracing enabled → %s", settings.langfuse_host)
+    logger.info("Langfuse 链路追踪已启用 → %s", settings.langfuse_host)
 
 
 def get_langfuse_handler():

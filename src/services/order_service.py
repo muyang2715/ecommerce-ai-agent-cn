@@ -97,15 +97,15 @@ class OrderService:
             conn.close()
 
     def can_return(self, order_id: str) -> tuple[bool, str]:
-        """Check if an order is eligible for return (within 14 days, delivered)."""
+        """判断订单是否已送达且仍在 14 天退货期内。"""
         order = self.get_order(order_id)
         if not order:
-            return False, f"Order {order_id} not found."
+            return False, f"未找到订单 {order_id}。"
         if order.status == "cancelled":
-            return False, "Cancelled orders cannot be returned."
+            return False, "已取消的订单不能申请退货。"
         if order.status != "delivered":
-            return False, f"Order has not been delivered yet (status: {order.status})."
+            return False, f"订单尚未送达（当前状态：{order.status}）。"
         created = datetime.fromisoformat(order.created_at)
         if datetime.now() - created > timedelta(days=14):
-            return False, "The 14-day return window has expired."
-        return True, "Order is eligible for return."
+            return False, "该订单已超过 14 天退货期限。"
+        return True, "该订单符合退货条件。"

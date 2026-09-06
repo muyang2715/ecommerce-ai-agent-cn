@@ -28,10 +28,13 @@ def after_tools(state: AgentState) -> str:
     """Router after tools: check for errors, retry if possible."""
     tool_results = state.get("tool_results", {})
 
-    # Check if any tool returned an error
+    # Retry execution failures, not valid negative business outcomes such as
+    # "not eligible" or "not found". Those results are final answers.
     has_error = any(
-        str(v).startswith("❌") or "error" in str(v).lower()
-        for v in tool_results.values()
+        name == "error"
+        or str(value).startswith("❌ 调用工具")
+        or str(value).startswith("❌ 未找到工具")
+        for name, value in tool_results.items()
     )
 
     retries = state.get("retry_count", 0)

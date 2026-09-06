@@ -19,21 +19,21 @@ class ReturnRequest:
 
 
 RETURN_REASONS = {
-    "defective": "Product is defective / malfunctioning",
-    "wrong_item": "Wrong item was shipped",
-    "not_as_described": "Product doesn't match description",
-    "changed_mind": "Changed my mind",
-    "damaged": "Package arrived damaged",
-    "too_late": "Delivery was too late",
+    "defective": "商品存在缺陷或故障",
+    "wrong_item": "收到的商品与订单不符",
+    "not_as_described": "商品与描述不符",
+    "changed_mind": "改变购买决定",
+    "damaged": "包裹到货时已损坏",
+    "too_late": "配送时间过晚",
 }
 
 RETURN_POLICY = """
-📋 **Return Policy Summary:**
-- You have **14 days** from delivery to initiate a return.
-- Items must be in original packaging and unused.
-- Return shipping: **Free for defective/wrong items**, buyer pays for other reasons.
-- Refunds are processed within **3-5 business days** after we receive the item.
-- Non-returnable items: Clearance/outlet items, hygiene products (earbud tips, etc.)
+📋 **退货政策摘要**
+- 商品送达后 **14 天内**可以申请退货。
+- 商品必须保持未使用状态，并保留原包装。
+- 因商品缺陷或错发产生的退货运费由商家承担；其他原因由买家承担。
+- 收到退回商品后，退款将在 **3～5 个工作日**内处理。
+- 不支持退货的商品：清仓商品、特价商品及涉及卫生安全的商品（如耳塞套等）。
 """
 
 

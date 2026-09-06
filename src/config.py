@@ -1,12 +1,11 @@
-"""
-E-Commerce Support Agent - Configuration
-"""
+"""Crate 中文电商智能客服配置。"""
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # OpenAI
     openai_api_key: str = ""
+    openai_base_url: str = ""
     openai_model: str = "gpt-4o"
     temperature: float = 0.0
 

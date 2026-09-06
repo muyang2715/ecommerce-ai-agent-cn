@@ -24,9 +24,8 @@ async def chat(req: ChatRequest):
     initial_state: AgentState = {
         "messages": [
             SystemMessage(content=(
-                "IMPORTANT LANGUAGE RULE: You are an English-only assistant. "
-                "You MUST write all responses in English. Do NOT use Turkish, "
-                "even if the customer writes in Turkish. Always reply in English."
+                "重要语言规则：你是中文电商客服。无论客户使用中文还是英文，"
+                "都必须使用简体中文回复；订单号、物流单号、SKU、姓名和地址可保留原文。"
             )),
             HumanMessage(content=req.message),
         ],
@@ -55,7 +54,7 @@ async def chat(req: ChatRequest):
         client.flush()
 
     return ChatResponse(
-        response=result.get("final_response", "Sorry, something went wrong."),
+        response=result.get("final_response", "抱歉，系统暂时无法处理您的请求。"),
         intent=result.get("intent", "general"),
         order_id=result.get("order_id", ""),
         tracking_number=result.get("tracking_number", ""),

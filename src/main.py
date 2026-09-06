@@ -13,8 +13,8 @@ from src.services.database import init_db
 from src.observability.langfuse_setup import get_langfuse_client, init_langfuse
 
 app = FastAPI(
-    title="E-Commerce Support Agent",
-    description="LangGraph ReAct agent for e-commerce customer support",
+    title="Crate 中文电商智能客服",
+    description="基于 LangGraph ReAct、Tool Calling 与 SQLite 的电商客服 Agent",
     version="1.0.0",
 )
 

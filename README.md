@@ -1,359 +1,261 @@
-# ● Crate — AI Support Agent
+# Crate 中文电商智能客服
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
-[![LangGraph](https://img.shields.io/badge/LangGraph-0.2+-green.svg)](https://langchain.com/langgraph)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Agent-green.svg)](https://langchain.com/langgraph)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-24%20passed-brightgreen.svg)](tests/)
 
-> A production-grade **ReAct agent** for e-commerce customer support. Built from scratch with **LangGraph**, **FastAPI**, **Streamlit**, **SQLite**, and **Langfuse** — no black-box frameworks, no pre-built templates.
+这是 [m-peker/ecommerce-ai-agent](https://github.com/m-peker/ecommerce-ai-agent) 的中文本地复现版本。项目保留原作者、Git 历史与 MIT License，在不改变核心业务逻辑的前提下完成了简体中文适配、macOS/Windows 本地兼容和 Claude 风格界面优化。
 
----
+> 当前定位：可本地演示的开源项目复现，不是全新业务系统。
 
-## 📖 Table of Contents
+## 项目能力
 
-- [Architecture](#-architecture)
-- [How It Works](#-how-it-works)
-- [Features](#-features)
-- [Quick Start](#-quick-start)
-- [API Reference](#-api-reference)
-- [Project Structure](#-project-structure)
-- [Sample Queries](#-sample-queries)
-- [Database Schema](#-database-schema)
-- [Testing](#-testing)
-- [Observability](#-observability)
-- [Tech Stack](#-tech-stack)
-- [License](#-license)
+- 按订单号查询状态、金额、商品、地址和物流单号
+- 按邮箱列出客户订单，或按商品名模糊搜索订单
+- 按物流单号查询承运商、状态、预计送达日期和轨迹
+- 查询退货政策、检查订单退货资格、创建 RMA
+- LangGraph 三节点工作流、LLM Tool Calling 和错误重试
+- FastAPI 接口、Swagger 文档和 Streamlit 中文聊天界面
+- SQLite 自动建表与种子数据，Langfuse 可选接入
 
----
+## 系统架构
 
-## 🏗️ Architecture
+![项目架构](images/architecture.png)
 
-![Architecture](images/architecture.png)
-
-The agent sits behind a FastAPI gateway, exposing a single `/chat` endpoint. Each request flows through a **3-node LangGraph pipeline** backed by SQLite storage and traced end-to-end by Langfuse.
-
-| Layer | Technology | Role |
-|---|---|---|
-| **Chat UI** | Streamlit | Customer-facing interface with quick-actions and "Details" expander |
-| **Gateway** | FastAPI + Pydantic v2 | `POST /api/v1/chat` — async, typed, CORS-enabled |
-| **Agent** | LangGraph StateGraph | ReAct loop with conditional routing and retry logic |
-| **LLM** | GPT-4o-mini (OpenAI) | Function-calling — the LLM decides *which tool* to invoke |
-| **Tools** | 7 custom tools | Order lookup, email search, product search, shipping tracking, returns |
-| **Storage** | SQLite | 12 orders + 9 shipments (auto-seeded on first run) |
-| **Observability** | Langfuse | Every LLM call, tool execution, latency, and cost — traced in real-time |
-
----
-
-## 🧠 How It Works
-
-### The ReAct Loop
-
-```
-User: "Where is my order ORD-1002?"
-  │
-  ▼
-Triage Node (LLM)
-  → classifies: intent = "order_status", order_id = "ORD-1002"
-  │
-  ▼
-Tool Node (LLM + function calling)
-  → selects: lookup_order("ORD-1002")
-  → executes against SQLite
-  │
-  ▼
-Response Node (LLM)
-  → composes English reply from tool result
-  → "Here are your order details..."
-  │
-  ▼
-User receives structured answer
+```text
+用户
+  ↓
+Streamlit 中文界面
+  ↓ HTTP
+FastAPI /api/v1/chat
+  ↓
+LangGraph StateGraph
+  ├─ triage：识别 intent 并提取订单号、物流单号、邮箱
+  ├─ tools：LLM 选择工具，工具调用 Service 访问 SQLite
+  ├─ retry：仅在真实工具执行错误时最多重试 3 次
+  └─ response：根据真实 Tool Results 生成中文回复
+  ↓
+用户
 ```
 
-### Key Design Decisions
+内部 intent 和 Tool 函数名继续使用英文标识，确保 API、LangGraph 路由和第三方集成稳定；所有面向用户的界面、提示词、业务结果和 API 说明均已中文化。
 
-**Why 3 nodes?** Separation of concerns. Triage handles classification, Tool handles execution, Response handles composition. Each is independently testable and replaceable.
+## 快速开始
 
-**Why function calling?** The LLM decides which tool to invoke — not hardcoded rules. This means the agent can handle ambiguous queries like _"my keyboard order"_ by calling `search_orders("keyboard")`.
+### 环境要求
 
-**Why English?** Prompts are in English, responses are in English, seed data is in English (US addresses, international carriers). A fallback detector catches any Turkish leakage from the LLM.
+- Python 3.11 或更高版本
+- Git
+- OpenAI API Key，或兼容 OpenAI Chat Completions / Tool Calling 的服务
 
-**Why retry?** The `after_tools` router checks for errors. If a tool fails (e.g., SQLite locked), it loops back up to 3 times before returning a graceful fallback message.
-
----
-
-## ✨ Features
-
-| Feature | Detail |
-|---|---|
-| 🧩 **7 Tools** | `lookup_order` · `lookup_orders_by_email` · `search_orders` · `track_shipment` · `get_return_policy` · `check_return_eligibility` · `initiate_return` |
-| 🔄 **Retry Loop** | Up to 3 retries on tool errors — graph loops back automatically |
-| 🇬🇧 **English-Only** | Prompts + Turkish detection fallback (`_contains_turkish`) |
-| 🗄️ **SQLite** | 12 orders, 9 shipments — auto-created on first startup |
-| 📊 **Langfuse** | Every LLM call, tool execution, latency, token count, and cost tracked |
-| 🧪 **24 Tests** | Services, tools, graph logic — all pass without LLM credentials |
-| 🚀 **Single Command** | `python run.py` starts API + UI + opens browser |
-| 🔒 **No Leaks** | `.env` gitignored — `.env.example` has placeholders only |
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- OpenAI API key ([get one here](https://platform.openai.com/api-keys))
-- (Optional) Langfuse account for tracing ([sign up](https://cloud.langfuse.com))
-
-### 1. Clone & Setup
+### macOS / Linux
 
 ```bash
-git clone https://github.com/m-peker/ecommerce-ai-agent.git
-cd ecommerce-ai-agent
-python -m venv venv
-source venv/bin/activate      # Mac/Linux
-venv\Scripts\activate         # Windows
-pip install -r requirements.txt
-```
-
-### 2. Configure
-
-```bash
+git clone https://github.com/muyang2715/ecommerce-ai-agent-cn.git
+cd ecommerce-ai-agent-cn
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
 cp .env.example .env
+python run.py
 ```
 
-Edit `.env` and add your API key:
+### Windows PowerShell
+
+```powershell
+git clone https://github.com/muyang2715/ecommerce-ai-agent-cn.git
+Set-Location ecommerce-ai-agent-cn
+py -3.11 -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+python run.py
+```
+
+如果 PowerShell 禁止激活脚本，可仅对当前终端执行：
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+### 环境变量
+
+编辑 `.env`：
+
 ```env
 OPENAI_API_KEY=sk-your-key-here
-OPENAI_MODEL=gpt-4o-mini
+OPENAI_BASE_URL=
+OPENAI_MODEL=gpt-4o
+TEMPERATURE=0.0
+
+API_HOST=0.0.0.0
+API_PORT=8000
 ```
 
-> **Optional — Langfuse tracing:**  
-> Add `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` to `.env`.  
-> Without them, tracing is silently disabled — no errors.
+`OPENAI_BASE_URL` 可留空以使用 OpenAI 官方服务。若使用兼容端点，请确认它完整支持 Tool Calling。不要把 `.env` 或真实密钥提交到 Git。
 
-### 3. Run
+Langfuse 是可选功能；未提供 `LANGFUSE_PUBLIC_KEY` 和 `LANGFUSE_SECRET_KEY` 时会自动停用，不影响项目启动。
+
+## 启动与访问
 
 ```bash
 python run.py
 ```
 
-Opens:
-- **API** → http://localhost:8000/docs (Swagger UI)
-- **Chat** → http://localhost:8501 (Streamlit)
+- 中文聊天界面：[http://localhost:8501](http://localhost:8501)
+- FastAPI Swagger：[http://localhost:8000/docs](http://localhost:8000/docs)
+- 健康检查：[http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
 
-### 4. Test
+`run.py` 会使用当前虚拟环境的 Python，同时启动 FastAPI 和 Streamlit。也可以分别运行：
 
 ```bash
-pytest tests/ -v    # 24 tests, ~1.5 seconds
+uvicorn src.main:app --host 0.0.0.0 --port 8000
+streamlit run src/ui/streamlit_app.py --server.port 8501
 ```
 
----
+若前后端不在同一台机器，可在启动 Streamlit 前设置 `CRATE_API_URL`：
 
-## 📡 API Reference
+```bash
+export CRATE_API_URL="https://your-api.example.com/api/v1/chat"
+```
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/v1/health` | Health check → `{"status":"ok","version":"1.0.0"}` |
-| `POST` | `/api/v1/chat` | Send message → agent response |
+## API
 
-### Request
+### 健康检查
+
+```http
+GET /api/v1/health
+```
+
+### 智能客服
+
+```http
+POST /api/v1/chat
+Content-Type: application/json
+```
+
+请求：
 
 ```json
 {
-  "message": "Where is my package FDX-78901234?",
-  "session_id": "optional-session-id"
+  "message": "查询订单 ORD-1002 的状态",
+  "session_id": "可选会话标识"
 }
 ```
 
-### Response
+响应包含中文 `response`、稳定的内部 `intent`、提取出的实体和真实 `tool_results`：
 
 ```json
 {
-  "response": "Hello! Here is the tracking information...",
-  "intent": "shipping_tracking",
-  "order_id": "",
-  "tracking_number": "FDX-78901234",
+  "response": "订单 ORD-1002 已发货……",
+  "intent": "order_status",
+  "order_id": "ORD-1002",
+  "tracking_number": "",
   "customer_email": "",
   "tool_results": {
-    "track_shipment": "✅ **FedEx** — FDX-78901234\n📌 Status: DELIVERED..."
+    "lookup_order": "📦 订单 #ORD-1002……"
   }
 }
 ```
 
-### cURL
+## LangGraph 工作流
 
-```bash
-curl -X POST http://localhost:8000/api/v1/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message":"What is the status of ORD-1002?"}'
+```text
+START
+  ↓
+triage
+  ├─ general ───────────────→ response
+  └─ 需要业务数据 ─────────→ tools
+                              ├─ 成功/业务拒绝 → response
+                              └─ 执行错误且重试<3 → tools
+                                                   ↓
+                                                response
+                                                   ↓
+                                                  END
 ```
 
----
+`AgentState` 保存消息、intent、订单号、物流单号、客户邮箱、Tool Results、最终回复、重试次数和错误信息。LLM 在 `tools` 节点通过 LangChain 的函数调用协议选择工具；Tool 调用 Service，Service 使用参数化 SQL 访问 SQLite。有效的“未找到”或“不符合退货条件”属于业务结果，不会被误判为系统错误。
 
-## 📁 Project Structure
+## Tools
 
-```
-ecommerce-ai-agent/
-├── .env.example                 # Environment template (safe to commit)
-├── .gitignore                   # Ignores .env, __pycache__, *.db
-├── README.md
-├── requirements.txt
-├── run.py                       # Single-command launcher (API + UI)
-├── images/
-│   └── architecture.png         # Architecture diagram
-├── src/
-│   ├── config.py                # Pydantic settings (reads .env)
-│   ├── main.py                  # FastAPI app + startup/shutdown hooks
-│   ├── agent/
-│   │   ├── __init__.py
-│   │   ├── state.py             # AgentState TypedDict
-│   │   ├── tools.py             # 7 @tool definitions
-│   │   ├── nodes.py             # triage_node, tool_node, response_node
-│   │   └── graph.py             # StateGraph builder + retry router
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── database.py          # SQLite schema + seed data (12 orders, 9 shipments)
-│   │   ├── order_service.py     # Order CRUD + search
-│   │   ├── shipping_service.py  # Carrier tracking lookup
-│   │   └── returns_service.py   # RMA creation + policy engine
-│   ├── observability/
-│   │   ├── __init__.py
-│   │   └── langfuse_setup.py    # Langfuse client + CallbackHandler
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── schemas.py           # ChatRequest / ChatResponse / HealthResponse
-│   │   └── routes.py            # POST /chat endpoint
-│   └── ui/
-│       ├── __init__.py
-│       └── streamlit_app.py     # Chat interface with quick-actions
-├── data/                        # SQLite DB (auto-created, gitignored)
-└── tests/
-    ├── __init__.py
-    └── test_agent.py            # 24 unit tests
-```
+| Tool | 用途 | 主要参数 | Service | 修改数据 |
+|---|---|---|---|---|
+| `lookup_order` | 按订单号查询详情 | `order_id` | `OrderService` | 否 |
+| `lookup_orders_by_email` | 查询邮箱名下订单 | `email` | `OrderService` | 否 |
+| `search_orders` | 按姓名、商品或部分订单号搜索 | `query` | `OrderService` | 否 |
+| `track_shipment` | 查询物流状态和轨迹 | `tracking_number` | `ShippingService` | 否 |
+| `get_return_policy` | 读取退货政策 | 无 | `ReturnsService` | 否 |
+| `check_return_eligibility` | 判断订单能否退货 | `order_id` | `OrderService` | 否 |
+| `initiate_return` | 创建退货申请和 RMA | `order_id`, `reason` | `ReturnsService` | 是 |
 
----
+## SQLite
 
-## 🎯 Sample Queries
+数据库会在首次启动或测试时自动创建于 `src/data/ecommerce.db`。
 
-Test these in the Streamlit UI or via API:
+| 表 | 用途 | 初始数据 |
+|---|---|---:|
+| `orders` | 订单、客户、商品、状态、金额、地址 | 12 条 |
+| `shipments` | 承运商、物流状态、预计送达与轨迹 | 9 条 |
+| `returns` | RMA、原因、状态与退款金额 | 按需创建 |
 
-| Query | What Happens |
+项目不会在中文化过程中改写原始英文姓名、商品名和地址；这些是业务数据，不是界面文案。
+
+## 演示问题
+
+| 中文输入 | 预期 Tool |
 |---|---|
-| `What's the status of order ORD-1002?` | Triage → `lookup_order` → Response |
-| `Where is package FDX-78901234?` | Triage → `track_shipment` → Response |
-| `What is your return policy?` | Triage → `get_return_policy` → Response |
-| `I want to return ORD-1001` | Triage → `check_return_eligibility` → Response |
-| `Show orders for james@example.com` | Triage → `lookup_orders_by_email` → Response |
-| `Find my keyboard order` | Triage → `search_orders("keyboard")` → Response |
-| `I need to return ORD-1008` | Triage → check → **denied** (outside 14-day window) |
-| `Track UPS-99887766` | Triage → `track_shipment` → Response (out for delivery) |
+| `查询订单 ORD-1002 的状态` | `lookup_order` |
+| `查询物流 FDX-78901234` | `track_shipment` |
+| `请介绍一下退货政策` | `get_return_policy` |
+| `我想退回 ORD-1001` | `check_return_eligibility` |
+| `查询 james@example.com 的订单` | `lookup_orders_by_email` |
+| `帮我找键盘订单` | `search_orders` |
+| `订单 ORD-1008 可以退货吗？` | `check_return_eligibility`，业务拒绝 |
+| `追踪 UPS-99887766` | `track_shipment` |
 
-### Demo
+Streamlit 回复下方的“查看处理详情与 Tool Results”会显示 intent、识别实体、实际调用工具和原始工具结果。
 
-**Order lookup with agent reasoning details expanded:**
-
-![Demo 1](images/demo-1.png)
-
-**Package tracking with full event history:**
-
-![Demo 2](images/demo-2.png)
-
----
-
-## 🗄️ Database Schema
-
-The database is auto-created on first startup with realistic seed data.
-
-### `orders` (12 rows)
-
-```
-order_id | customer_name    | email               | status      | total   | tracking
-─────────┼──────────────────┼─────────────────────┼─────────────┼─────────┼──────────
-ORD-1001 | James Wilson     | james@example.com   | delivered   | $105.97 | FDX-78901234
-ORD-1002 | Sarah Chen       | sarah@example.com   | shipped     | $149.99 | UPS-45678901
-ORD-1003 | Marcus Rivera    | marcus@example.com  | confirmed   | $499.99 | —
-ORD-1004 | Emily Foster     | emily@example.com   | cancelled   | $69.98  | —
-...
-```
-
-### `shipments` (9 rows)
-
-```
-tracking     | carrier | status            | location
-─────────────┼─────────┼───────────────────┼──────────────────
-FDX-78901234 | FedEx   | delivered         | Springfield, IL
-UPS-45678901 | UPS     | in_transit        | London → Stansted
-DHL-11223344 | DHL     | delivered         | Mountain View, CA
-UPS-99887766 | UPS     | out_for_delivery  | Hollywood, CA
-FDX-33445566 | FedEx   | in_transit        | Paris, FR (intl.)
-...
-```
-
-### `returns` (on-demand)
-
-```
-rma_number | order_id  | reason       | status   | refund
-───────────┼───────────┼──────────────┼──────────┼────────
-RMA-1000   | ORD-1009  | defective    | approved | $89.99
-```
-
----
-
-## 🧪 Testing
+## 测试
 
 ```bash
-pytest tests/ -v --tb=short
+pytest tests/ -v
 ```
 
-**24 tests, 4 categories:**
+测试覆盖 Order、Shipping、Returns Service，7 个 Agent Tools 中的主要只读路径，以及 LangGraph 构建和条件路由。测试无需 LLM Key。
 
-| Category | Tests | Covers |
-|---|---|---|
-| `TestOrderService` | 11 | CRUD, email lookup, product search, return eligibility (all statuses) |
-| `TestShippingService` | 3 | Tracking lookup, missing tracking, readable status |
-| `TestReturnsService` | 2 | RMA creation, policy retrieval |
-| `TestAgentTools` | 5 | Tool invocation — order lookup, tracking, policy, eligibility |
-| `TestGraph` | 3 | Graph construction, node presence, routing logic |
+## 项目结构
 
-Tests run **without LLM credentials** — they only exercise the service layer and tool logic.
-
----
-
-## 📊 Observability
-
-When Langfuse keys are configured, every request produces a trace:
-
-```
-Trace: chat:Where is package FDX-78901234?  (2.1s, $0.004)
-├── ChatOpenAI (triage_node)      0.8s,  120 tokens
-├── ChatOpenAI (tool_node)        0.5s,   85 tokens
-├── 🔧 track_shipment             0.2s
-├── after_tools (router)          <0.1s
-└── ChatOpenAI (response_node)    0.6s,  180 tokens
+```text
+ecommerce-ai-agent-cn/
+├── run.py
+├── requirements.txt
+├── README.md
+├── REPRODUCTION_NOTES.md
+├── INTERVIEW_CHEATSHEET.md
+├── src/
+│   ├── agent/          # State、Tools、Nodes、Graph
+│   ├── api/            # FastAPI 路由与 Schema
+│   ├── services/       # SQLite 与业务服务
+│   ├── observability/  # 可选 Langfuse
+│   └── ui/             # Streamlit 中文 Claude 风格界面
+└── tests/
 ```
 
-**Tracked metrics:** latency per node, token usage, cost estimation, tool success/failure rate.
+## Vercel 部署提示
 
-To enable: sign up at [cloud.langfuse.com](https://cloud.langfuse.com), create a project, and add the keys to your `.env` file.
+该项目当前是本地双进程架构，不能原样作为一个 Vercel 项目完整运行：
 
----
+- `run.py` 同时启动 FastAPI 与 Streamlit 两个常驻服务，不符合单个 Vercel Function 的进程模型。
+- Vercel Functions 的本地文件系统不能作为 SQLite 的持久共享存储。
+- Streamlit 依赖使 Python 部署包较大，生产环境还需要认证、限流和严格 CORS。
 
-## 🛠️ Tech Stack
+本轮仅完成 GitHub 代码托管和本地可演示版本，没有假装完成 Vercel 云部署。完整风险清单见 [REPRODUCTION_NOTES.md](REPRODUCTION_NOTES.md)。若后续需要上线，建议拆分前端/API，并先把 SQLite 替换为托管数据库。
 
-| Layer | Technology | Why |
-|---|---|---|
-| **Agent** | LangGraph 0.2+ | Explicit state graph — debuggable, no magic |
-| **LLM** | GPT-4o-mini | Fast, cheap, excellent function calling |
-| **API** | FastAPI + Pydantic v2 | Async, auto-docs, type-safe |
-| **UI** | Streamlit | Quick to build, looks professional |
-| **DB** | SQLite | Zero-config, file-based, perfect for demos |
-| **Observability** | Langfuse | Open-source, LLM-native tracing |
-| **Testing** | pytest | Fast, readable, no external deps |
+## 原项目与 License
 
----
+- 原仓库：[m-peker/ecommerce-ai-agent](https://github.com/m-peker/ecommerce-ai-agent)
+- 原作者：[@m-peker](https://github.com/m-peker)
+- License：[MIT](LICENSE)
 
-## 📝 License
-
-MIT — use it, fork it, build on it. Built for learning and portfolio purposes.
-
+中文化版本保留原作者版权、README 来源说明和 Git 历史。
