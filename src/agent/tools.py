@@ -7,11 +7,13 @@ OpenAI function-calling tools.
 from langchain_core.tools import tool
 
 from src.services.order_service import OrderService
+from src.services.product_service import ProductService
 from src.services.shipping_service import ShippingService
 from src.services.returns_service import ReturnsService
 
 # Singleton service instances
 order_service = OrderService()
+product_service = ProductService()
 shipping_service = ShippingService()
 returns_service = ReturnsService()
 
@@ -107,6 +109,48 @@ def search_orders(query: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Product discovery tools
+# ---------------------------------------------------------------------------
+
+@tool
+def search_product_catalog(
+    query: str = "",
+    category: str = "",
+    max_price: float | None = None,
+) -> str:
+    """搜索 Crate 商品目录并进行预算筛选。
+
+    适用于商品推荐、选购建议、品类浏览和价格预算问题。
+    query 可传商品名、用途或关键词；category 和 max_price 均可选。
+    """
+    products = product_service.search_products(
+        query=query,
+        category=category,
+        max_price=max_price,
+    )
+    if not products:
+        filters = []
+        if query:
+            filters.append(f"关键词“{query}”")
+        if category:
+            filters.append(f"品类“{category}”")
+        if max_price is not None:
+            filters.append(f"预算 ${max_price:g} 以内")
+        detail = "、".join(filters) or "当前条件"
+        return f"❌ 商品目录中没有找到符合{detail}的在售商品。"
+
+    lines = [f"🛍️ 找到 {len(products)} 件符合条件的商品：\n"]
+    for product in products:
+        lines.append(
+            f"  • **{product.product_name}**（{product.product_id}）\n"
+            f"    品类：{product.category}｜价格：${product.price:.2f}｜现货\n"
+            f"    {product.description}"
+        )
+    lines.append("\n价格与库存来自本地演示商品目录。")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Shipping tools
 # ---------------------------------------------------------------------------
 
@@ -189,6 +233,7 @@ ALL_TOOLS = [
     lookup_order,
     lookup_orders_by_email,
     search_orders,
+    search_product_catalog,
     track_shipment,
     get_return_policy,
     check_return_eligibility,

@@ -1,6 +1,6 @@
 # 项目简介
 
-Crate 是一个电商客服 ReAct Agent。它用 OpenAI 模型完成意图识别、实体提取、工具选择和最终回复，用 LangGraph 显式组织流程，通过 7 个 LangChain Tool 访问 SQLite 中的订单、物流和退货服务，并由 FastAPI 暴露接口、Streamlit 提供演示 UI。
+Crate 是一个电商品牌 ReAct Agent。它用 OpenAI-compatible 模型完成意图识别、实体提取、开放式回答、工具选择和最终回复，用 LangGraph 显式组织流程，通过 8 个 LangChain Tool 访问 SQLite 中的商品、订单、物流和退货服务，并由 FastAPI 暴露接口、Streamlit 提供演示 UI。
 
 本次工作定位为开源项目复现：保留原作者 Git 历史、README、LICENSE 和业务逻辑，修复本地启动兼容性，并完成中文化与 Claude 风格 UI 优化。
 
@@ -139,15 +139,15 @@ python -m pytest tests/ -v
 
 结果：
 
-- 收集：24
-- 通过：24
+- 收集：28
+- 通过：28
 - 失败：0
 - 跳过：0
 - 实际耗时：2.07 秒
 - `pip check`：`No broken requirements found.`
 - `compileall`：通过
 
-测试覆盖 Service、7 个 Tool 中的主要只读工具、退货 Service、Graph 构建和 triage 后条件路由。测试不调用 LLM，因此不需要 OpenAI Key。
+测试覆盖订单、物流、退货与商品目录 Service，8 个 Tool 中的主要路径、Graph 构建和 triage 后条件路由。测试不调用 LLM，因此不需要 OpenAI Key。
 
 # 系统架构
 
@@ -164,7 +164,7 @@ Triage Node（LLM：intent + entities）
   ↓ 条件边
 Tool Node（LLM Function Calling + Tool 执行）
   ↓
-Order / Shipping / Returns Service
+Order / Product / Shipping / Returns Service
   ↓
 SQLite
   ↓
@@ -180,7 +180,7 @@ FastAPI ChatResponse → Streamlit → 用户
 `src/agent/state.py` 定义了共享 `TypedDict`：
 
 - `messages`：LangChain 消息列表，使用 `add_messages` reducer，追加式合并。
-- `intent`：`order_status`、`shipping_tracking`、`return_request`、`return_policy` 或 `general`。
+- `intent`：`order_status`、`shipping_tracking`、`return_request`、`return_policy`、`product_discovery` 或 `general`。
 - `order_id`、`tracking_number`、`customer_email`：triage 提取出的实体。
 - `tool_results`：Tool 名称到字符串结果的字典。
 - `final_response`：最终用户回复。
@@ -190,7 +190,7 @@ FastAPI ChatResponse → Streamlit → 用户
 
 ## FastAPI 与 Streamlit 如何连接
 
-- `src/api/routes.py` 为每次请求构造初始 `AgentState`，同步调用 `agent_graph.invoke()`，再把 state 中的 intent、实体、tool results 和 final response 映射为 `ChatResponse`。
+- `src/api/routes.py` 按 `session_id` 注入最近 12 条对话，构造 `AgentState` 并同步调用 `agent_graph.invoke()`，再把 intent、实体、tool results 和 final response 映射为 `ChatResponse`。演示内存最多保留 100 个会话，重启后清空。
 - `src/ui/streamlit_app.py` 向 `CRATE_API_URL` 指定的地址发送请求，未设置时使用 `http://localhost:8000/api/v1/chat`。
 - UI 的“查看处理详情与 Tool Results”根据返回的 intent、实体和 `tool_results` 展示可核验执行记录；它不是模型的隐藏思维链。
 - 浏览器实测确认首页、4 个中文快捷操作、聊天输入和详情展开区可用。真实点击“查询 ORD-1002”后，详情展示 `order_status`、`ORD-1002`、`lookup_order` 和完整中文工具结果。
@@ -220,7 +220,7 @@ Triage → 条件 Router → Tool Execution → after_tools Router → Response
 
 1. Triage LLM 只返回 JSON；节点解析 intent、订单号、物流号和邮箱。
 2. `should_use_tools()` 仅对 `general` 跳过工具，其他 intent 全部进入 Tool Node。
-3. Tool Node 用 `ChatOpenAI(...).bind_tools(ALL_TOOLS)` 把 7 个函数 schema 交给模型，由模型决定调用哪个工具及参数。
+3. Tool Node 用 `ChatOpenAI(...).bind_tools(ALL_TOOLS)` 把 8 个函数 schema 交给模型，由模型决定调用哪个工具及参数。
 4. 节点按工具名在 `ALL_TOOLS` 中查找并执行 `tool.invoke(tool_args)`。
 5. Tool 调用对应 Service；Service 每次通过 `get_connection()` 打开 SQLite，查询/写入后关闭连接。
 6. 结果写入 `tool_results`，`retry_count` 每次 Tool Node 执行加 1。
@@ -242,6 +242,7 @@ Triage → 条件 Router → Tool Execution → after_tools Router → Response
 | `lookup_order` | 按订单号查询详情 | `order_id: str` | `OrderService.get_order` | 否 | `查询订单 ORD-1002 的状态` |
 | `lookup_orders_by_email` | 查询邮箱关联的全部订单 | `email: str` | `OrderService.get_orders_by_email` | 否 | `查询 james@example.com 的订单` |
 | `search_orders` | 按订单号、客户名或商品名模糊搜索 | `query: str` | `OrderService.search_orders` | 否 | `帮我找键盘订单` |
+| `search_product_catalog` | 按商品、用途、品类和预算搜索目录 | `query`, `category`, `max_price` | `ProductService.search_products` | 否 | `150 美元以内推荐办公键盘` |
 | `track_shipment` | 查询承运商、状态和物流事件 | `tracking_number: str` | `ShippingService.track` | 否 | `追踪 UPS-99887766` |
 | `get_return_policy` | 返回退货与退款政策 | 无 | `ReturnsService.get_policy` | 否 | `请介绍退货政策` |
 | `check_return_eligibility` | 判断订单是否已送达且在 14 天内 | `order_id: str` | `OrderService.can_return` | 否 | `ORD-1001 可以退货吗？` |
@@ -287,6 +288,12 @@ Triage → 条件 Router → Tool Execution → after_tools Router → Response
 
 初始 seed 为 0 行；本轮验证后为 4 行：三次完整 pytest 创建 `RMA-1000`、`RMA-1002`、`RMA-1003`，显式 `initiate_return` 工具演示创建 `RMA-1001`。这些行都是项目自身功能产生的测试数据，没有改写订单或物流 seed。
 
+## `products`
+
+字段：`product_id`（PK）、`product_name`、`category`、`price`、`description`、`keywords`、`in_stock`。
+
+初始化 16 行，用于智能导购和预算筛选。商品名称与价格来自原订单种子数据，中文描述和检索关键词用于本地演示。
+
 # API 接口
 
 ## `GET /api/v1/health`
@@ -312,7 +319,7 @@ Triage → 条件 Router → Tool Execution → after_tools Router → Response
 
 响应字段：`response`、`intent`、`order_id`、`tracking_number`、`customer_email`、`tool_results`。
 
-`session_id` 当前只被 schema 接收，未用于记忆、checkpoint 或隔离会话。
+`session_id` 已用于隔离并保存最近 12 条 Human/AI 消息，可理解省略主语的连续追问。当前是单进程内存实现，服务重启后历史清空，不适合作为多实例生产存储。
 
 缺少 Key、模型不存在或 triage 遇到 429 时，此请求仍返回 HTTP 200，但实际响应会错误地降级为 `intent=general`、空实体和空 `tool_results`。这是 upstream 的静默异常行为。
 
@@ -338,7 +345,7 @@ Triage → 条件 Router → Tool Execution → after_tools Router → Response
 # 中文化与 UI 优化
 
 1. Triage、Tool Calling 上下文和 Response Prompt 均支持中文输入，并强制使用简体中文回复；内部 intent 保持英文枚举。
-2. 7 个 Tool 的描述、状态、错误和结果全部中文化；英文商品、姓名与地址作为原始业务数据保留。
+2. 8 个 Tool 的描述、状态、错误和结果全部中文化；英文商品、姓名与地址作为原始业务数据保留。
 3. FastAPI 标题、Schema 描述、启动日志与错误提示已中文化。
 4. Streamlit 改为 Claude 风格的暖米色画布、纸张卡片、陶土橙点缀和克制留白。
 5. 字体栈优先使用 macOS 的 `STFangsong`/`华文仿宋`，并提供 Windows `FangSong`/`FangSong_GB2312` 与 CJK Serif 回退。
@@ -393,7 +400,7 @@ Vercel 当前官方资料：
 3. `triage_node` 吞掉所有异常并返回 `general`，使缺 Key、模型不存在和限流看起来像普通问候。
 4. 本轮已区分业务失败和系统失败，但系统错误重试仍没有指数退避；429 会立即重试，可能加速耗尽额度。
 5. LLM 没有选择工具时不会重试。
-6. `session_id` 未实现会话记忆。
+6. 会话记忆当前存放在单进程内存中，重启会丢失，多实例之间不能共享。
 7. 退货 14 天判断使用订单创建时间，不是单独的送达时间。
 8. 同一订单可以创建多个 RMA；本轮测试已经展示这一点。
 9. 用户把 API Key 直接发送到了聊天中；演示后应在提供商控制台轮换该 Key。
@@ -404,7 +411,7 @@ Vercel 当前官方资料：
 - [x] 虚拟环境创建成功
 - [x] requirements 安装成功
 - [x] SQLite 数据正常
-- [x] pytest 能运行（24/24）
+- [x] pytest 能运行（28/28）
 - [x] FastAPI 正常启动
 - [x] `/docs` 可以访问
 - [x] `/health` 正常
@@ -423,7 +430,7 @@ Vercel 当前官方资料：
 
 本地复现完成后，再考虑：
 
-1. 在 Windows 3.11/3.12 上重跑安装、24 个测试和两个服务。
+1. 在 Windows 3.11/3.12 上重跑安装、28 个测试和两个服务。
 2. 为第三方端点配置足够额度或请求节流，避免连续演示触发 429。
 3. 锁定依赖版本，建立可重复安装基线。
 4. 若决定上 Vercel，先拆分 UI/API 并替换 SQLite；不要在当前复现阶段直接大改。

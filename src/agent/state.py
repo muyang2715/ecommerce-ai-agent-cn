@@ -13,7 +13,7 @@ class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
 
     # Triage classification result
-    intent: str  # order_status | shipping_tracking | return_request | return_policy | general
+    intent: str  # order_status | shipping_tracking | return_request | return_policy | product_discovery | general
 
     # Entities extracted from the user message
     order_id: str

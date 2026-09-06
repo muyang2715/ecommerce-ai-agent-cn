@@ -2,13 +2,14 @@
 
 import html
 import os
+import uuid
 
 import requests
 import streamlit as st
 
 
 st.set_page_config(
-    page_title="Crate 智能客服",
+    page_title="Crate 品牌智能助手",
     page_icon="◉",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -230,15 +231,15 @@ st.markdown(
       <div class="brand">
         <div class="brand-mark">C</div>
         <div>
-          <div class="brand-name">Crate 智能客服</div>
-          <div class="brand-sub">订单 · 物流 · 退货，一站式智能协助</div>
+          <div class="brand-name">Crate 品牌智能助手</div>
+          <div class="brand-sub">智能导购 · 订单 · 物流 · 售后，一站式协助</div>
         </div>
       </div>
       <div class="online">服务在线</div>
     </div>
     <div class="intro">
       <p class="intro-title">今天想查询什么？</p>
-      <div class="intro-copy">我可以读取真实订单与物流数据，也能判断退货资格。请选择快捷问题，或直接输入你的需求。</div>
+      <div class="intro-copy">从选购建议到订单售后，我会根据你的问题自主判断是否调用业务工具，也可以自然交流一般问题。</div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -250,18 +251,21 @@ if "msgs" not in st.session_state:
     st.session_state.msgs = [
         {
             "role": "a",
-            "text": "你好，我是 Crate 智能客服。你可以告诉我订单号、物流单号或注册邮箱，我会帮你查询。",
+            "text": "你好，我是 Crate 品牌智能助手。无论你想选商品、查订单、追物流、办退货，还是咨询其他问题，都可以直接告诉我。",
             "steps": None,
         }
     ]
 if "pending_query" not in st.session_state:
     st.session_state.pending_query = None
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
 
 INTENT_LABELS = {
     "order_status": "识别为订单查询",
     "shipping_tracking": "识别为物流追踪",
     "return_request": "识别为退货请求",
     "return_policy": "识别为退货政策咨询",
+    "product_discovery": "识别为智能导购需求",
     "general": "识别为一般咨询",
 }
 
@@ -269,6 +273,7 @@ TOOL_LABELS = {
     "lookup_order": "按订单号查询订单",
     "lookup_orders_by_email": "按邮箱查询全部订单",
     "search_orders": "模糊搜索订单与商品",
+    "search_product_catalog": "搜索商品目录并按预算筛选",
     "track_shipment": "查询承运商物流轨迹",
     "get_return_policy": "读取退货政策",
     "check_return_eligibility": "检查退货资格",
@@ -316,7 +321,11 @@ def render_details(steps: dict | None) -> None:
 def call_api(query: str) -> tuple[str, dict | None]:
     """调用 FastAPI，并把错误转换成面向用户的中文提示。"""
     try:
-        response = requests.post(API_URL, json={"message": query}, timeout=90)
+        response = requests.post(
+            API_URL,
+            json={"message": query, "session_id": st.session_state.session_id},
+            timeout=90,
+        )
         if response.status_code == 200:
             data = response.json()
             reply = data.get("response") or "抱歉，我暂时无法生成回复，请稍后重试。"
@@ -338,8 +347,8 @@ def call_api(query: str) -> tuple[str, dict | None]:
 QUICK_ACTIONS = [
     ("查询 ORD-1002", "查询订单 ORD-1002 的状态"),
     ("追踪 FDX-78901234", "查询物流 FDX-78901234"),
+    ("帮我选商品", "我想买一款 150 美元以内的键盘，请帮我推荐"),
     ("了解退货政策", "请介绍一下退货政策"),
-    ("查询我的订单", "查询 james@example.com 的订单"),
 ]
 
 columns = st.columns(4)
@@ -378,5 +387,5 @@ if st.session_state.pending_query:
     render_exchange(pending_query)
     st.rerun()
 
-if prompt := st.chat_input("请输入订单号、物流单号或退货问题…"):
+if prompt := st.chat_input("想选商品、查订单，或聊点别的？直接告诉我…"):
     render_exchange(prompt)

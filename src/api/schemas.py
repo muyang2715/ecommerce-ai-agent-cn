@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
     message: str = Field(..., description="用户消息", min_length=1)
-    session_id: str = Field(default="default", description="会话 ID（预留用于多轮会话）")
+    session_id: str = Field(default="default", description="用于保存最近对话上下文的会话 ID")
 
 
 class ChatResponse(BaseModel):

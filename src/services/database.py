@@ -5,6 +5,7 @@ Tables:
   - orders: customer orders with items (JSON), status, tracking
   - shipments: carrier tracking with event history (JSON)
   - returns: return requests with RMA tracking
+  - products: searchable product catalog for the shopping assistant
 """
 import json
 import sqlite3
@@ -57,6 +58,16 @@ CREATE TABLE IF NOT EXISTS returns (
     refund_amount  REAL NOT NULL,
     created_at     TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS products (
+    product_id     TEXT PRIMARY KEY,
+    product_name   TEXT NOT NULL,
+    category       TEXT NOT NULL,
+    price          REAL NOT NULL,
+    description    TEXT NOT NULL,
+    keywords       TEXT NOT NULL,
+    in_stock       INTEGER NOT NULL DEFAULT 1
+);
 """
 
 
@@ -66,10 +77,15 @@ def init_db():
     try:
         conn.executescript(SCHEMA)
 
-        # Only seed if database is empty
+        # 订单和物流只在首次运行时写入。
         count = conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
         if count == 0:
             _seed_data(conn)
+
+        # 独立检查商品表，让已有本地数据库也能平滑增加智能导购能力。
+        product_count = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+        if product_count == 0:
+            _seed_products(conn)
 
         conn.commit()
     finally:
@@ -234,3 +250,50 @@ def _seed_data(conn: sqlite3.Connection):
 
     conn.commit()
     print(f"✅ SQLite seeded: {len(orders)} orders, {len(shipments)} shipments")
+
+
+def _seed_products(conn: sqlite3.Connection):
+    """写入演示商品目录；商品与价格来自原项目订单种子数据。"""
+    products = [
+        ("PRD-101", "USB-C Cable", "配件", 12.99,
+         "适合手机、平板和笔记本日常充电与数据连接。", "数据线 充电线 cable usb type-c", 1),
+        ("PRD-102", "XL Mousepad", "电脑外设", 19.99,
+         "适合桌面办公和游戏设备的大尺寸鼠标垫。", "鼠标垫 桌垫 mousepad 游戏 办公", 1),
+        ("PRD-103", "Car Charger", "车载配件", 19.99,
+         "用于车辆内为手机等移动设备充电。", "车充 车载充电 charger 手机", 1),
+        ("PRD-104", "Phone Case", "手机配件", 24.99,
+         "为日常使用提供基础防护的手机保护壳。", "手机壳 保护壳 case 防护", 1),
+        ("PRD-105", "Tablet Stand", "办公配件", 29.99,
+         "用于桌面支撑平板，适合阅读、视频和办公。", "平板支架 tablet stand 桌面", 1),
+        ("PRD-106", "Laptop Sleeve", "电脑配件", 34.99,
+         "便携式笔记本电脑保护套。", "电脑包 内胆包 laptop sleeve 保护", 1),
+        ("PRD-107", "Wireless Charger", "充电设备", 39.99,
+         "适合支持无线充电的移动设备。", "无线充电器 wireless charger 手机", 1),
+        ("PRD-108", "Wireless Mouse", "电脑外设", 49.99,
+         "适合日常办公和移动使用的无线鼠标。", "无线鼠标 mouse 办公 外设", 1),
+        ("PRD-109", "Wireless Headphones", "音频设备", 79.99,
+         "适合音乐、通勤和日常使用的无线头戴式耳机。", "无线耳机 headphones 头戴 音乐 通勤", 1),
+        ("PRD-110", "Wireless Earbuds", "音频设备", 79.99,
+         "轻便的真无线耳塞，适合移动场景。", "无线耳塞 earbuds 蓝牙耳机 通勤", 1),
+        ("PRD-111", "Bluetooth Speaker", "音频设备", 89.99,
+         "便携式蓝牙扬声器，适合室内外播放。", "蓝牙音箱 speaker 便携 音乐", 1),
+        ("PRD-112", "HD Webcam", "电脑外设", 89.99,
+         "适合视频会议和远程沟通的高清摄像头。", "摄像头 webcam 视频会议 远程办公", 1),
+        ("PRD-113", "1TB Portable SSD", "存储设备", 129.99,
+         "便携式 1TB 固态硬盘，适合备份与移动存储。", "移动硬盘 ssd 固态硬盘 存储 备份 1tb", 1),
+        ("PRD-114", "Mechanical Keyboard", "电脑外设", 149.99,
+         "适合桌面办公和偏好机械手感的用户。", "机械键盘 keyboard 键盘 办公 游戏", 1),
+        ("PRD-115", "Smartwatch Pro", "智能穿戴", 299.99,
+         "用于日常提醒和运动记录的智能手表。", "智能手表 smartwatch 穿戴 运动", 1),
+        ("PRD-116", '27\" 4K Monitor', "显示设备", 499.99,
+         "27 英寸 4K 显示器，适合办公与内容创作。", "显示器 monitor 屏幕 4k 设计 办公", 1),
+    ]
+
+    conn.executemany(
+        """INSERT INTO products
+           (product_id, product_name, category, price, description, keywords, in_stock)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        products,
+    )
+    conn.commit()
+    print(f"✅ SQLite 商品目录已写入：{len(products)} 件商品")

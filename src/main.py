@@ -13,8 +13,8 @@ from src.services.database import init_db
 from src.observability.langfuse_setup import get_langfuse_client, init_langfuse
 
 app = FastAPI(
-    title="Crate 中文电商智能客服",
-    description="基于 LangGraph ReAct、Tool Calling 与 SQLite 的电商客服 Agent",
+    title="Crate 中文电商品牌智能助手",
+    description="基于 LangGraph ReAct、Tool Calling 与 SQLite 的智能导购和售后 Agent",
     version="1.0.0",
 )
 

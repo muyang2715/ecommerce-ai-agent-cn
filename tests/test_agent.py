@@ -144,6 +144,36 @@ class TestReturnsService:
         assert "14 天" in policy
 
 
+class TestProductService:
+    def test_search_products_by_chinese_keyword(self):
+        from src.services.product_service import ProductService
+
+        svc = ProductService()
+        products = svc.search_products(query="键盘")
+        assert len(products) == 1
+        assert products[0].product_name == "Mechanical Keyboard"
+
+    def test_search_products_by_budget(self):
+        from src.services.product_service import ProductService
+
+        svc = ProductService()
+        products = svc.search_products(max_price=30)
+        assert products
+        assert all(product.price <= 30 for product in products)
+
+    def test_search_products_with_natural_chinese_phrase(self):
+        from src.services.product_service import ProductService
+
+        svc = ProductService()
+        products = svc.search_products(
+            query="办公键盘",
+            category="办公用品",
+            max_price=150,
+        )
+        assert products
+        assert products[0].product_name == "Mechanical Keyboard"
+
+
 # ---------------------------------------------------------------------------
 # Agent tool tests (no LLM needed)
 # ---------------------------------------------------------------------------
@@ -183,6 +213,13 @@ class TestAgentTools:
         result = check_return_eligibility.invoke({"order_id": "ORD-1001"})
         assert "✅" in result
 
+    def test_search_product_catalog(self):
+        from src.agent.tools import search_product_catalog
+
+        result = search_product_catalog.invoke({"query": "键盘", "max_price": 150})
+        assert "Mechanical Keyboard" in result
+        assert "$149.99" in result
+
 
 # ---------------------------------------------------------------------------
 # Graph structure test (no LLM needed)
@@ -213,3 +250,4 @@ class TestGraph:
         assert should_use_tools({"intent": "return_request"}) == "tools"
         assert should_use_tools({"intent": "general"}) == "response"
         assert should_use_tools({"intent": "return_policy"}) == "tools"
+        assert should_use_tools({"intent": "product_discovery"}) == "tools"
